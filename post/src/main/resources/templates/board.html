@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시판</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        table {
+            border-collapse : collapes;
+            width : 100%;
+        }
+
+        th,td {
+            border : 1px solid black;
+            padding : 8px;
+        }
+        th{
+            background:#f0f0f0;
+        }
+    </style>
+</head>
+<body>
+<h1>게시판</h1>
+
+<form>
+    <input type="hidden" class="postId">
+    <input type="text" placeholder="제목" class="title">
+    <input type="text" placeholder="내용" class="content">
+    <button type="submit">글 저장</button>
+    <button type="button">취소</button>
+</form>
+
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>제목</th>
+        <th>내용</th>
+        <th>생성시각</th>
+        <th>수정시각</th>
+        <th>액션</th>
+    </tr>
+    </thead>
+    <tbody class="postsBody"></tbody>
+</table>
+
+
+<script>
+    function loadPost(){
+        axios.get('/posts').then(res => {
+            const posts = res.data;
+            const tbody = document.querySelector('.postsBody');
+
+            tbody.innerHTML = '';
+
+            posts.forEach(post => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                        <td>${post.id}</td>
+                        <td>${post.title}</td>
+                        <td>${post.content}</td>
+                        <td>${post.createdAt}</td>
+                        <td>${post.updatedAt}</td>
+                        <td>
+                            <button onclick="viewPost(${post.id})">상세보기</button>
+                            <button onclick="editPost(${post.id})">수정</button>
+                            <button onclick="deletePost(${post.id})">삭제</button>
+                        </td>
+                    `;
+                tbody.append(tr);
+            })
+
+        })
+    }
+    loadPost()
+
+    function viewPost(id){
+        axios.get(`/posts/${id}`).then(res => {
+            const post = res.data
+            alert(`ID : ${post.id}\n ${post.title}\n ${post.content}`)
+        })
+    }
+
+    document.querySelector('form').onsubmit = event => {
+        event.preventDefault()
+        const id = document.querySelector('.postId').value
+        const title = document.querySelector('.title').value
+        const content = document.querySelector('.content').value
+
+        if(id) {
+            axios.put(`/posts/${id}`, {title,content}).then(_ =>  {
+                loadPost()
+                resetForm()
+            })
+        } else {
+            axios.post('/posts', {title,content}).then(_ => {
+                loadPost()
+                resetForm()
+            })
+        }
+
+    }
+
+    function editPost(id){
+        axios.get(`/posts/${id}`).then(res => {
+            const post = res.data;
+
+            document.querySelector('.postId').value= post.id
+            document.querySelector('.title').value = post.title
+            document.querySelector('.content').value = post.content
+
+
+        })
+    }
+
+    function deletePost(id){
+        if(confirm('정말 삭제할까요?')){
+            axios.delete(`/post/${id}`).then(_ => loadPost())
+        }
+    }
+
+    function resetForm(){
+        document.querySelector('.postId').value= '';
+        document.querySelector('.title').value = '';
+        document.querySelector('.content').value = '';
+    }
+</script>
+</body>
+</html>
